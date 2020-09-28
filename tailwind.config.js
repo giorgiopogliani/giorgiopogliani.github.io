@@ -3,7 +3,10 @@ module.exports = {
     removeDeprecatedGapUtilities: true,
     purgeLayersByDefault: true,
   },
-  purge: [],
+  purge: [
+    'pages/*.js',
+    'components/*.js',
+  ],
   theme: {
     typography: {
       'pre code': { color: null, backgroundColor: null }
