@@ -29,7 +29,7 @@ class UserTable extends Component
 }
 ```
 
-Next we can add two custom properties like so. The `columns` property is an array that we will use to create the table headers in the HTML. I'll cover later what the `Column` class is. The `rows` property is the query to use to get the data we want. I like this approach as we can write any kind of query in here and can be tuned for this specific component.
+Next we can add two custom properties like so. The `columns` property is an array that we will use to create the table headers in the HTML. I'll cover later what the `Column` class is. The `rows` property is the query to get the data we want. I like this approach as we can write any kind of query in here and can be tuned for this specific component.
 
 ```php
 public function getColumnsProperty()
@@ -86,7 +86,7 @@ class Column
 }
 ```
 
-I wanted to use dot notation like ``details.address`` to get the value of the eloquent model so that I could reach relations on the model. To achive this I added a simple trait to the model.
+I wanted to use dot notation like ``details.address`` to get the value of the eloquent model so that I could reach relations on the model. To achieve this I added a simple trait to the model.
 
 ```php
 trait CanHaveDataTable
@@ -153,6 +153,7 @@ public function getRowsProperty()
 }
 ```
 
-Hope you enjoy this little component I did. Send me your approach or how will you improve this. 
-You can found me on [Twitter](https://twitter.com/giorgiopogliani) or [Instagram](https://instagram.com/giorgiopogliani)
+Hope you enjoy this little component I did. Send me your approach or how would you improve this. You can extend this to add more features or wrap everything in a trait or a package and power-up any model with a datatable.
+
+You can found me on [Twitter](https://twitter.com/giorgiopogliani) or [Instagram](https://instagram.com/giorgiopogliani)!
 
