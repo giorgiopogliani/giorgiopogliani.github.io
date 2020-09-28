@@ -3,16 +3,10 @@ module.exports = {
     removeDeprecatedGapUtilities: true,
     purgeLayersByDefault: true,
   },
-  purge: {
-    mode: 'all',
-    content: [
-      'pages/*.js',
-      'components/*.js',
-    ],
-    options: {
-      whitelist: ['h1', 'h2', 'h3', 'p', 'blockquote', 'strong', 'pre', 'code', 'ul', 'li'],
-    },
-  },
+  purge: [
+    'pages/*.js',
+    'components/*.js',
+  ],
   theme: {
     extend: {
       typography: (theme) => ({
