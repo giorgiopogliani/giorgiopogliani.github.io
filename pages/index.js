@@ -2,6 +2,7 @@ import Container from '@components/Container';
 import Header from '@components/Header';
 import Link from 'next/link'
 import { getAllPosts } from '../utils';
+import Head from 'next/head';
 
 export default function Home(props) {
   return (
