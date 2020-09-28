@@ -51,7 +51,7 @@ public function getRowsProperty()
 }
 ```
 
-The column class is a very simple one. It's basically a fancy array with some usefull methods. I snake cased the title to create the key that will be used to get the property on the eloquent model. Calling a key like a function will set the value. So for example if we need a custom key not based on the title you can do `$column->key('custom_key')`
+The column class is a very simple one. It's basically a fancy array with some usefull methods. I snake cased the title to create the key that will be used to get the property on the eloquent model. Calling a key like a function will set the value. So for example if we need a custom key not based on the title you can do ` $column->key('custom_key') `
 ```php
 use Illuminate\Support\Str;
 
@@ -86,8 +86,9 @@ class Column
 }
 ```
 
-I wanted to use dot notation like `details.address` to get the value of the eloquent model so that I could reach relations on the model. To achive this I added a simple trait to the model.
-```
+I wanted to use dot notation like ``details.address`` to get the value of the eloquent model so that I could reach relations on the model. To achive this I added a simple trait to the model.
+
+```php
 trait CanHaveDataTable
 {
     public function getValueFor(Column $column): ?string
@@ -139,7 +140,7 @@ And of course, if you called paginate on the query you can this snippet to have 
 ```
 
 But if you implement a little search input that will be dynamic and will use all the power of Livewire. We can edit the rows custom property like so. 
-```
+```php
 public function getRowsProperty()
 {
     $query = User::query();
