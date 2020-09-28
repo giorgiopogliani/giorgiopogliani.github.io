@@ -140,7 +140,7 @@ Finally we can kick in some table templates in the blade file of the Livewire co
 </table>
 ```
 
-And of course, if you called paginate on the query you can this snippet to have the links to paginate the table. Althogh, doing this way we will not use the dynamic feature of livewire because we would click another link and refresh the page. You can read the livewire documentation on "Using A Custom Pagination View", but the idea is to have custom links that will set the page.
+And of course, if you called paginate on the query you can use this snippet to have the links to paginate the table. Although, doing this way we will not use the dynamic feature of livewire because you click another link and this will reload the page. You can read the livewire documentation on **"Using A Custom Pagination View"**, but the idea is to have custom links that will set the page.
 ```html
 <div class="mt-5">
     {{ $rows->links() }}
