@@ -3,7 +3,9 @@ module.exports = {
     removeDeprecatedGapUtilities: true,
     purgeLayersByDefault: true,
   },
-  purge: false,
+  purge: {
+    enabled: false,
+  },
   theme: {
     extend: {
       typography: (theme) => ({
