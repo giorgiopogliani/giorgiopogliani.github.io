@@ -10,7 +10,7 @@ module.exports = {
       'components/*.js',
     ],
     options: {
-      whitelist: ['h1', 'h2', 'h3', 'p', 'blockquote', 'strong', 'code', 'ul', 'li'],
+      whitelist: ['h1', 'h2', 'h3', 'p', 'blockquote', 'strong', 'pre', 'code', 'ul', 'li'],
     },
   },
   theme: {
