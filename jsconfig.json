@@ -5,6 +5,7 @@
         "@posts/*": ["posts/*"],
         "@utils/*": ["utils/*"],
         "@components/*": ["components/*"],
+        "@lib/*": ["lib/*"],
       }
     }
   }
