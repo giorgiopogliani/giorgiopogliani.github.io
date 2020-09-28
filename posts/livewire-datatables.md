@@ -4,6 +4,16 @@ language: php
 tags:
     - laravel
     - livewire
+preview: """
+I recently needed to build a datatable while working with Livewire, a cool new layer to make dynamics 
+blade components without writing API, I will show you what I did.
+"""
+keywords:
+    - laravel
+    - livewire
+    - php
+    - table
+    - datatable
 ---
 
 Who didn't need a table to show some data in a Laravel application at some point? I came a cross this recently while building a ticketing system. I was using Livewire, a cool new layer to make dynamics blade components without writing API. I will show you what I did.
