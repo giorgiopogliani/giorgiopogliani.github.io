@@ -1,0 +1,122 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="preload" href="/_next/static/css/3247b2d0c4a65b700c7b.css" as="style"/><link rel="stylesheet" href="/_next/static/css/3247b2d0c4a65b700c7b.css"/><link rel="preload" href="/_next/static/chunks/main-68a017413a43b7d3f9d8.js" as="script"/><link rel="preload" href="/_next/static/chunks/webpack-488dc228921f1fdbc0e7.js" as="script"/><link rel="preload" href="/_next/static/chunks/framework.d557686129d5a5cc0c94.js" as="script"/><link rel="preload" href="/_next/static/chunks/commons.90eb9ff712fbb3a78446.js" as="script"/><link rel="preload" href="/_next/static/chunks/pages/_app-6d50339896defc209bb5.js" as="script"/><link rel="preload" href="/_next/static/chunks/pages/posts/%5Bslug%5D-63b12814dfb551a0f27a.js" as="script"/></head><body><div id="__next"><div><div><div class="bg-blue-100"><div class="container mx-auto p-6 flex items-center justify-between"><a href="/"><svg class="h-5 w-5 fill-current text-black transform -rotate-90" viewBox="0 0 100 100"><path d="M0,50 a1,1 0 0,0 100,0"></path></svg></a></div></div><div class="py-12 w-full h-full max-w-6xl mx-auto overflow-auto"><div class="w-full max-w-5xl mx-auto"><h1 class="leading-10 text-5xl font-bold text-blue-600 mb-8">Livewire Datatables</h1><div class="prose max-w-none"><p>Who didn&#39;t need a table to show some data in a Laravel application at some point? I came a cross this recently while building a ticketing system. I was using Livewire, a cool new layer to make dynamics blade components without writing API. I will show you what I did.</p>
+<p>Let&#39;s get started. We create the component with the artisan command line tool. </p>
+<pre><code class="language-bash">php artisan livewire:make UserTable</code></pre>
+<p>The genereted component is something like this.</p>
+<pre><code class="language-php">namespace App\Http\Livewire;
+
+use App\Models\User;
+use Livewire\Component;
+
+class UserTable extends Component
+{
+    public function render()
+    {
+        return view(&#39;livewire.user-table&#39;);
+    }
+}</code></pre>
+<p>Next we can add two custom properties like so. The <code>columns</code> property is an array that we will use to create the table headers in the HTML. I&#39;ll cover later what the <code>Column</code> class is. The <code>rows</code> property is the query to use to get the data we want. I like this approach as we can write any kind of query in here and can be tuned for this specific component.</p>
+<pre><code class="language-php">public function getColumnsProperty()
+{
+    return [
+        Column::text(&#39;Name&#39;),
+        Column::text(&#39;Email&#39;),
+        Column::text(&#39;CreatedAt&#39;),
+    ];
+}
+
+public function getRowsProperty()
+{
+    $query = Ticket::query();
+
+    $query-&gt;latest();
+
+    return $query-&gt;paginate();
+}</code></pre>
+<p>The column class is a very simple one. It&#39;s basically a fancy array with some usefull methods. I snake cased the title to create the key that will be used to get the property on the eloquent model. Calling a key like a function will set the value. So for example if we need a custom key not based on the title you can do <code>$column-&gt;key(&#39;custom_key&#39;)</code></p>
+<pre><code class="language-php">use Illuminate\Support\Str;
+
+class Column
+{
+    protected array $options = [
+        &#39;format&#39; =&gt; &#39;string&#39;, // default column type
+    ];
+
+    public function __construct(string $title)
+    {
+        $this-&gt;options[&#39;title&#39;] = $title;
+        $this-&gt;options[&#39;key&#39;] = Str::snake($title);
+    }
+
+    public static function text(string $title)
+    {
+        return new static($title);
+    }
+
+    public function __call( $name, $arguments )
+    {
+        return tap($this, function($col) use ($name, $arguments) {
+            $col-&gt;options[$name] = $arguments[0];
+        });
+    }
+
+    public function __get( $name )
+    {
+        return $this-&gt;options[$name] ?? null;
+    }
+}</code></pre>
+<p>I wanted to use dot notation like <code>details.address</code> to get the value of the eloquent model so that I could reach relations on the model. To achive this I added a simple trait to the model.</p>
+<pre><code>trait CanHaveDataTable
+{
+    public function getValueFor(Column $column): ?string
+    {
+        $data = $this-&gt;toArray();
+
+        return collect([$data])-&gt;pluck($column-&gt;key)-&gt;first();
+    }
+}</code></pre>
+<p>If you are familiar with the <code>pluck</code> function you can easly guess what I did. The <code>pluck</code> function can access values with the dot notation. So I converted the model (<code>$this</code>) to an array and wrapped it with an array and instantiated a <code>Collection</code> with the <code>collect</code> function.</p>
+<p>Finally we can kick in some table templates in the blade file of the Livewire component. Here we have the two special custom properties. So all we need to do is iterate on those properties. I will use tailwind the get things pretty.</p>
+<pre><code class="language-html">&lt;table class=&quot;table min-w-full border-collapse divide-y divide-gray-200 bg-white&quot;&gt;
+&lt;thead&gt;
+    &lt;tr&gt;
+        @foreach ($columns as $column)
+            &lt;th&gt;{{$column-&gt;title}}&lt;/th&gt;
+        @endforeach
+    &lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+    @forelse ($rows as $row)
+        &lt;tr&gt;
+            @foreach ($columns as $column)
+                &lt;td&gt;
+                    {{$row-&gt;getValueFor($column)}}
+                &lt;/td&gt;
+            @endforeach
+        &lt;/tr&gt;
+    @empty
+        &lt;tr&gt;
+            &lt;td colspan=&quot;{{count($columns)}}&quot; class=&quot;text-gray-500&quot;&gt;
+                {{ __(&#39;No records.&#39;)}}
+            &lt;/td&gt;
+        &lt;/tr&gt;
+    @endforelse
+&lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+<p>And of course, if you called paginate on the query you can this snippet to have the links to paginate the table. Althogh, doing this way we will not use the dynamic feature of livewire because we would click another link and refresh the page. You can read the livewire documentation on &quot;Using A Custom Pagination View&quot;, but the idea is to have custom links that will set the page.</p>
+<pre><code class="language-html">&lt;div class=&quot;mt-5&quot;&gt;
+    {{ $rows-&gt;links() }}
+&lt;/div&gt;</code></pre>
+<p>But if you implement a little search input that will be dynamic and will use all the power of Livewire. We can edit the rows custom property like so. </p>
+<pre><code>public function getRowsProperty()
+{
+    $query = User::query();
+
+    if ($this-&gt;search) {
+        $query = $query-&gt;search($this-&gt;search);
+    }
+
+    return $query-&gt;paginate();
+}</code></pre>
+<p>Hope you enjoy this little component I did. Send me your approach or how will you improve this. 
+You can found me on <a href="https://twitter.com/giorgiopogliani">Twitter</a> or <a href="https://instagram.com/giorgiopogliani">Instagram</a></p>
+</div></div></div></div></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"title":"Livewire Datatables","language":"php","tags":["laravel","livewire"],"content":"\u003cp\u003eWho didn\u0026#39;t need a table to show some data in a Laravel application at some point? I came a cross this recently while building a ticketing system. I was using Livewire, a cool new layer to make dynamics blade components without writing API. I will show you what I did.\u003c/p\u003e\n\u003cp\u003eLet\u0026#39;s get started. We create the component with the artisan command line tool. \u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ephp artisan livewire:make UserTable\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThe genereted component is something like this.\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-php\"\u003enamespace App\\Http\\Livewire;\n\nuse App\\Models\\User;\nuse Livewire\\Component;\n\nclass UserTable extends Component\n{\n    public function render()\n    {\n        return view(\u0026#39;livewire.user-table\u0026#39;);\n    }\n}\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eNext we can add two custom properties like so. The \u003ccode\u003ecolumns\u003c/code\u003e property is an array that we will use to create the table headers in the HTML. I\u0026#39;ll cover later what the \u003ccode\u003eColumn\u003c/code\u003e class is. The \u003ccode\u003erows\u003c/code\u003e property is the query to use to get the data we want. I like this approach as we can write any kind of query in here and can be tuned for this specific component.\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-php\"\u003epublic function getColumnsProperty()\n{\n    return [\n        Column::text(\u0026#39;Name\u0026#39;),\n        Column::text(\u0026#39;Email\u0026#39;),\n        Column::text(\u0026#39;CreatedAt\u0026#39;),\n    ];\n}\n\npublic function getRowsProperty()\n{\n    $query = Ticket::query();\n\n    $query-\u0026gt;latest();\n\n    return $query-\u0026gt;paginate();\n}\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThe column class is a very simple one. It\u0026#39;s basically a fancy array with some usefull methods. I snake cased the title to create the key that will be used to get the property on the eloquent model. Calling a key like a function will set the value. So for example if we need a custom key not based on the title you can do \u003ccode\u003e$column-\u0026gt;key(\u0026#39;custom_key\u0026#39;)\u003c/code\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-php\"\u003euse Illuminate\\Support\\Str;\n\nclass Column\n{\n    protected array $options = [\n        \u0026#39;format\u0026#39; =\u0026gt; \u0026#39;string\u0026#39;, // default column type\n    ];\n\n    public function __construct(string $title)\n    {\n        $this-\u0026gt;options[\u0026#39;title\u0026#39;] = $title;\n        $this-\u0026gt;options[\u0026#39;key\u0026#39;] = Str::snake($title);\n    }\n\n    public static function text(string $title)\n    {\n        return new static($title);\n    }\n\n    public function __call( $name, $arguments )\n    {\n        return tap($this, function($col) use ($name, $arguments) {\n            $col-\u0026gt;options[$name] = $arguments[0];\n        });\n    }\n\n    public function __get( $name )\n    {\n        return $this-\u0026gt;options[$name] ?? null;\n    }\n}\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eI wanted to use dot notation like \u003ccode\u003edetails.address\u003c/code\u003e to get the value of the eloquent model so that I could reach relations on the model. To achive this I added a simple trait to the model.\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003etrait CanHaveDataTable\n{\n    public function getValueFor(Column $column): ?string\n    {\n        $data = $this-\u0026gt;toArray();\n\n        return collect([$data])-\u0026gt;pluck($column-\u0026gt;key)-\u0026gt;first();\n    }\n}\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eIf you are familiar with the \u003ccode\u003epluck\u003c/code\u003e function you can easly guess what I did. The \u003ccode\u003epluck\u003c/code\u003e function can access values with the dot notation. So I converted the model (\u003ccode\u003e$this\u003c/code\u003e) to an array and wrapped it with an array and instantiated a \u003ccode\u003eCollection\u003c/code\u003e with the \u003ccode\u003ecollect\u003c/code\u003e function.\u003c/p\u003e\n\u003cp\u003eFinally we can kick in some table templates in the blade file of the Livewire component. Here we have the two special custom properties. So all we need to do is iterate on those properties. I will use tailwind the get things pretty.\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-html\"\u003e\u0026lt;table class=\u0026quot;table min-w-full border-collapse divide-y divide-gray-200 bg-white\u0026quot;\u0026gt;\n\u0026lt;thead\u0026gt;\n    \u0026lt;tr\u0026gt;\n        @foreach ($columns as $column)\n            \u0026lt;th\u0026gt;{{$column-\u0026gt;title}}\u0026lt;/th\u0026gt;\n        @endforeach\n    \u0026lt;/tr\u0026gt;\n\u0026lt;/thead\u0026gt;\n\u0026lt;tbody\u0026gt;\n    @forelse ($rows as $row)\n        \u0026lt;tr\u0026gt;\n            @foreach ($columns as $column)\n                \u0026lt;td\u0026gt;\n                    {{$row-\u0026gt;getValueFor($column)}}\n                \u0026lt;/td\u0026gt;\n            @endforeach\n        \u0026lt;/tr\u0026gt;\n    @empty\n        \u0026lt;tr\u0026gt;\n            \u0026lt;td colspan=\u0026quot;{{count($columns)}}\u0026quot; class=\u0026quot;text-gray-500\u0026quot;\u0026gt;\n                {{ __(\u0026#39;No records.\u0026#39;)}}\n            \u0026lt;/td\u0026gt;\n        \u0026lt;/tr\u0026gt;\n    @endforelse\n\u0026lt;/tbody\u0026gt;\n\u0026lt;/table\u0026gt;\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eAnd of course, if you called paginate on the query you can this snippet to have the links to paginate the table. Althogh, doing this way we will not use the dynamic feature of livewire because we would click another link and refresh the page. You can read the livewire documentation on \u0026quot;Using A Custom Pagination View\u0026quot;, but the idea is to have custom links that will set the page.\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-html\"\u003e\u0026lt;div class=\u0026quot;mt-5\u0026quot;\u0026gt;\n    {{ $rows-\u0026gt;links() }}\n\u0026lt;/div\u0026gt;\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eBut if you implement a little search input that will be dynamic and will use all the power of Livewire. We can edit the rows custom property like so. \u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003epublic function getRowsProperty()\n{\n    $query = User::query();\n\n    if ($this-\u0026gt;search) {\n        $query = $query-\u0026gt;search($this-\u0026gt;search);\n    }\n\n    return $query-\u0026gt;paginate();\n}\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eHope you enjoy this little component I did. Send me your approach or how will you improve this. \nYou can found me on \u003ca href=\"https://twitter.com/giorgiopogliani\"\u003eTwitter\u003c/a\u003e or \u003ca href=\"https://instagram.com/giorgiopogliani\"\u003eInstagram\u003c/a\u003e\u003c/p\u003e\n"},"__N_SSG":true},"page":"/posts/[slug]","query":{"slug":"livewire-datatables"},"buildId":"Ut9U8gzg4GPCAq9hPxEZE","nextExport":false,"isFallback":false,"gsp":true}</script><script nomodule="" src="/_next/static/chunks/polyfills-b4c9a36a8d9b649404fa.js"></script><script src="/_next/static/chunks/main-68a017413a43b7d3f9d8.js" async=""></script><script src="/_next/static/chunks/webpack-488dc228921f1fdbc0e7.js" async=""></script><script src="/_next/static/chunks/framework.d557686129d5a5cc0c94.js" async=""></script><script src="/_next/static/chunks/commons.90eb9ff712fbb3a78446.js" async=""></script><script src="/_next/static/chunks/pages/_app-6d50339896defc209bb5.js" async=""></script><script src="/_next/static/chunks/pages/posts/%5Bslug%5D-63b12814dfb551a0f27a.js" async=""></script><script src="/_next/static/Ut9U8gzg4GPCAq9hPxEZE/_buildManifest.js" async=""></script><script src="/_next/static/Ut9U8gzg4GPCAq9hPxEZE/_ssgManifest.js" async=""></script></body></html>
