@@ -4,10 +4,8 @@ language: php
 tags:
     - laravel
     - livewire
-preview: """
-I recently needed to build a datatable while working with Livewire, a cool new layer to make dynamics 
-blade components without writing API, I will show you what I did.
-"""
+preview: |
+    I recently needed to build a datatable while working with Livewire, a cool new layer to make dynamics blade components without writing API, I will show you what I did.
 keywords:
     - laravel
     - livewire
