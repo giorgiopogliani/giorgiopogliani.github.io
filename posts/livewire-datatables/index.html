@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Livewire Datatables</title>
+    <link rel="stylesheet" href="/css/tailwind.css">
+    <script src="/js/site.js"></script>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
+    <meta name="msapplication-TileColor" content="#00aba9" />
+    <meta name="theme-color" content="#ffffff" />
+</head>
+
+<body class="font-sans leading-normal text-blue-900">
+    <div class="bg-blue-100">
+        <div class="container mx-auto p-6 flex items-center justify-between">
+            <div>
+                <a href="/">
+                    <svg class="h-5 w-5 fill-current text-black transform -rotate-90" viewBox="0 0 100 100">
+                        <path d="M0,50 a1,1 0 0,0 100,0" />
+                    </svg>
+                </a>
+            </div>
+            <div class="space-x-3">
+                <a href="/blog" class="border-b py-2 transition duration-150 ease-in border-transparent hover:border-blue-800">
+                    Blog
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="py-12 px-6 container mx-auto overflow-auto">
+        <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.2.1/build/styles/atom-one-dark.min.css">
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.2.1/build/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+<div class="w-full max-w-5xl mx-auto">
+    <h1 class="leading-9 text-5xl font-bold text-blue-600 mb-8">
+        Livewire Datatables
+    </h1>
+    <div class="space-x-2 mb-8">
+        <span class="inline-flex items-center px-3 text-sm h-6 rounded-md bg-teal-600 text-white">php</span>
+                    <span class="inline-flex items-center px-3 text-sm h-6 rounded-md bg-blue-600 text-white">livewire</span>
+                    <span class="inline-flex items-center px-3 text-sm h-6 rounded-md bg-blue-600 text-white">laravel</span>
+        
+    </div>
+    <div class="prose mx-auto max-w-none">
+        <p>Who didn't need a table to show some data in a Laravel application at some point? I came a cross this recently while building a ticketing system. I was using Livewire, a cool new layer to make dynamics blade components without writing API. I will show you what I did.</p>
+<p>Let's get started. We create the component with the artisan command line tool.</p>
+<pre><code class="language-bash">php artisan livewire:make UserTable
+</code></pre>
+<p>The genereted component is something like this.</p>
+<pre><code class="language-php">namespace App\Http\Livewire;
+
+use App\Models\User;
+use Livewire\Component;
+
+class UserTable extends Component
+{
+    public function render()
+    {
+        return view('livewire.user-table');
+    }
+}
+</code></pre>
+<p>Next we can add two custom properties like so. The <code>columns</code> property is an array that we will use to create the table headers in the HTML. I'll cover later what the <code>Column</code> class is. The <code>rows</code> property is the query to get the data we want. I like this approach as we can write any kind of query in here and can be tuned for this specific component.</p>
+<pre><code class="language-php">public function getColumnsProperty()
+{
+    return [
+        Column::text('Name'),
+        Column::text('Email'),
+        Column::text('CreatedAt'),
+    ];
+}
+
+public function getRowsProperty()
+{
+    $query = Ticket::query();
+
+    $query-&gt;latest();
+
+    return $query-&gt;paginate();
+}
+</code></pre>
+<p>The column class is a very simple one. It's basically a fancy array with some usefull methods. I snake cased the title to create the key that will be used to get the property on the eloquent model. Calling a key like a function will set the value. So for example if we need a custom key not based on the title you can do <code>$column-&gt;key('custom_key')</code></p>
+<pre><code class="language-php">use Illuminate\Support\Str;
+
+class Column
+{
+    protected array $options = [
+        'format' =&gt; 'string', // default column type
+    ];
+
+    public function __construct(string $title)
+    {
+        $this-&gt;options['title'] = $title;
+        $this-&gt;options['key'] = Str::snake($title);
+    }
+
+    public static function text(string $title)
+    {
+        return new static($title);
+    }
+
+    public function __call( $name, $arguments )
+    {
+        return tap($this, function($col) use ($name, $arguments) {
+            $col-&gt;options[$name] = $arguments[0];
+        });
+    }
+
+    public function __get( $name )
+    {
+        return $this-&gt;options[$name] ?? null;
+    }
+}
+</code></pre>
+<p>I wanted to use dot notation like <code>details.address</code> to get the value of the eloquent model so that I could reach relations on the model. To achieve this I added a simple trait to the model.</p>
+<pre><code class="language-php">trait CanHaveDataTable
+{
+    public function getValueFor(Column $column): ?string
+    {
+        $data = $this-&gt;toArray();
+
+        return collect([$data])-&gt;pluck($column-&gt;key)-&gt;first();
+    }
+}
+</code></pre>
+<p>If you are familiar with the <code>pluck</code> function you can easly guess what I did. The <code>pluck</code> function can access values with the dot notation. So I converted the model (<code>$this</code>) to an array and wrapped it with an array and instantiated a <code>Collection</code> with the <code>collect</code> function.</p>
+<p>Finally we can kick in some table templates in the blade file of the Livewire component. Here we have the two special custom properties. So all we need to do is iterate on those properties. I will use tailwind the get things pretty.</p>
+<pre><code class="language-html">&lt;table class=&quot;table min-w-full border-collapse divide-y divide-gray-200 bg-white&quot;&gt;
+&lt;thead&gt;
+    &lt;tr&gt;
+        @foreach ($columns as $column)
+            &lt;th&gt;{{$column-&gt;title}}&lt;/th&gt;
+        @endforeach
+    &lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+    @forelse ($rows as $row)
+        &lt;tr&gt;
+            @foreach ($columns as $column)
+                &lt;td&gt;
+                    {{$row-&gt;getValueFor($column)}}
+                &lt;/td&gt;
+            @endforeach
+        &lt;/tr&gt;
+    @empty
+        &lt;tr&gt;
+            &lt;td colspan=&quot;{{count($columns)}}&quot; class=&quot;text-gray-500&quot;&gt;
+                {{ __('No records.')}}
+            &lt;/td&gt;
+        &lt;/tr&gt;
+    @endforelse
+&lt;/tbody&gt;
+&lt;/table&gt;
+</code></pre>
+<p>And of course, if you called paginate on the query you can use this snippet to have the links to paginate the table. Although, doing this way we will not use the dynamic feature of livewire because you click another link and this will reload the page. You can read the livewire documentation on <strong>&quot;Using A Custom Pagination View&quot;</strong>, but the idea is to have custom links that will set the page.</p>
+<pre><code class="language-html">&lt;div class=&quot;mt-5&quot;&gt;
+    {{ $rows-&gt;links() }}
+&lt;/div&gt;
+</code></pre>
+<p>But if you implement a little search input that will be dynamic and will use all the power of Livewire. We can edit the rows custom property like so.</p>
+<pre><code class="language-php">public function getRowsProperty()
+{
+    $query = User::query();
+
+    if ($this-&gt;search) {
+        $query = $query-&gt;search($this-&gt;search);
+    }
+
+    return $query-&gt;paginate();
+}
+</code></pre>
+<p>Hope you enjoy this little component I did. Send me your approach or how would you improve this. You can extend this to add more features or wrap everything in a trait or a package and power-up any model with a datatable.</p>
+<p>You can found me on <a href="https://twitter.com/giorgiopogliani">Twitter</a> or <a href="https://instagram.com/giorgiopogliani">Instagram</a>!</p>
+
+    </div>
+</div>
+
+    </div>
+</body>
+
+</html>
